@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplement Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .message {
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .message.user {
+            justify-content: flex-start;
+            flex-direction: row;
+        }
+
+        .message.bot {
+            justify-content: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message:hover .delete-button {
+            opacity: 1;
+        }
+
+        .delete-button {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .delete-button:hover {
+            background: #cc0000;
+        }
+
+        .avatar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background: #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #6b7280;
+        }
+
+        .bot-avatar {
+            object-fit: cover;
+        }
+
+        .avatar-name {
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: 500;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .message-content {
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user .message-content {
+            align-items: flex-start;
+        }
+
+        .message.bot .message-content {
+            align-items: flex-end;
+        }
+
+        .sender-name {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 4px;
+            padding: 0 5px;
+        }
+
+        .text-bubble {
+            padding: 18px 24px;
+            border-radius: 20px;
+            font-size: 18px;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        .user-bubble {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .bot-bubble {
+            background: #4A90E2;
+            color: white;
+        }
+
+        .edit-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .text-bubble:hover + .edit-hint {
+            opacity: 1;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .product-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .product-image-container {
+            width: 100%;
+            height: 200px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .product-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+        }
+
+        .product-image-container:hover .upload-overlay {
+            opacity: 1;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            line-height: 1.3;
+        }
+
+        .product-price {
+            font-size: 15px;
+            font-weight: 400;
+            color: #666;
+        }
+
+        .total {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .message-input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            align-items: flex-end;
+        }
+
+        .sender-toggle {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .sender-option {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .sender-option:hover {
+            background: #e0e0e0;
+        }
+
+        .sender-option.active {
+            background: white;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .message-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: none;
+            transition: border-color 0.2s;
+            min-height: 50px;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-button {
+            padding: 15px 30px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+            background: #357ABD;
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .image-upload {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .product-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="message user">
+            <div class="avatar-container">
+                <div class="avatar user-avatar">👤</div>
+                <div class="avatar-name">Kast in wording</div>
+            </div>
+            <div class="message-content">
+                <div class="sender-name">Kast in wording</div>
+                <div class="text-bubble user-bubble" contenteditable="true">
+                    Hoi! Ik ben op zoek naar supplementen die me kunnen helpen met spiergroei en herstel na het sporten.
+                </div>
+                <div class="edit-hint">Klik om te bewerken</div>
+            </div>
+            <button class="delete-button" onclick="deleteMessage(this)">×</button>
+        </div>
+
+        <div class="message bot">
+            <div class="avatar-container">
+                <img src="data:image/png;base64,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" class="avatar bot-avatar" alt="Kastbot">
+                <div class="avatar-name">Kastbot</div>
+            </div>
+            <div class="message-content">
+                <div class="sender-name">Kastbot</div>
+                <div class="text-bubble bot-bubble" contenteditable="true">
+                    Hai! Wat leuk dat je bezig bent met je fitness! Voor spiergroei en herstel zijn er een aantal supplementen die ik je kan aanraden. Ik stel je een persoonlijke combinatie samen. Kan je me vertellen wat je specifieke doelen zijn en of je bepaalde voorkeuren hebt?
+                </div>
+                <div class="edit-hint">Klik om te bewerken</div>
+            </div>
+            <button class="delete-button" onclick="deleteMessage(this)">×</button>
+        </div>
+
+        <div class="message user">
+            <div class="avatar-container">
+                <div class="avatar user-avatar">👤</div>
+                <div class="avatar-name">Kast in wording</div>
+            </div>
+            <div class="message-content">
+                <div class="sender-name">Kast in wording</div>
+                <div class="text-bubble user-bubble" contenteditable="true">
+                    Ik train 4x per week kracht en wil graag sneller herstellen. Ook slaap ik niet altijd zo goed.
+                </div>
+                <div class="edit-hint">Klik om te bewerken</div>
+            </div>
+            <button class="delete-button" onclick="deleteMessage(this)">×</button>
+        </div>
+
+        <div class="message bot">
+            <div class="avatar-container">
+                <img src="data:image/png;base64,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" class="avatar bot-avatar" alt="Kastbot">
+                <div class="avatar-name">Kastbot</div>
+            </div>
+            <div class="message-content">
+                <div class="sender-name">Kastbot</div>
+                <div class="text-bubble bot-bubble" contenteditable="true">
+                    Perfect! Dan heb ik een goede combinatie voor je:
+                </div>
+                <div class="edit-hint">Klik om te bewerken</div>
+            </div>
+            <button class="delete-button" onclick="deleteMessage(this)">×</button>
+        </div>
+
+        <div class="product-grid" id="product-section">
+            <div class="product-card">
+                <div class="product-image-container" onclick="document.getElementById('tsunami-upload').click()">
+                    <div class="upload-overlay">📸 Klik om afbeelding toe te voegen</div>
+                </div>
+                <div class="product-name" contenteditable="true">Tsunami<br>Nutrition<br>PRE WORKOUT</div>
+                <div class="product-price">€<span contenteditable="true">34,95</span></div>
+            </div>
+            <div class="product-card">
+                <div class="product-image-container" onclick="document.getElementById('eiwitten-upload').click()">
+                    <div class="upload-overlay">📸 Klik om afbeelding toe te voegen</div>
+                </div>
+                <div class="product-name" contenteditable="true">Tsunami<br>Nutrition<br>EIWITTEN</div>
+                <div class="product-price">€<span contenteditable="true">50,95</span></div>
+            </div>
+            <div class="product-card">
+                <div class="product-image-container" onclick="document.getElementById('slapend-upload').click()">
+                    <div class="upload-overlay">📸 Klik om afbeelding toe te voegen</div>
+                </div>
+                <div class="product-name" contenteditable="true">Slapend<br>GROEIEN</div>
+                <div class="product-price">€<span contenteditable="true">24,95</span></div>
+            </div>
+        </div>
+
+        <div class="total">
+            Totaal: €<span contenteditable="true">110,85</span>
+        </div>
+
+        <div class="message-input-container">
+            <div style="flex: 1;">
+                <div class="sender-toggle">
+                    <div class="sender-option active" data-sender="user">👨 Gebruiker</div>
+                    <div class="sender-option" data-sender="bot">🤖 Bot</div>
+                </div>
+                <textarea class="message-input" placeholder="Type een bericht..." rows="1"></textarea>
+            </div>
+            <button class="send-button" onclick="sendMessage()">Verstuur</button>
+        </div>
+
+        <input type="file" class="image-upload" id="tsunami-upload" accept="image/*">
+        <input type="file" class="image-upload" id="eiwitten-upload" accept="image/*">
+        <input type="file" class="image-upload" id="slapend-upload" accept="image/*">
+    </div>
+
+    <script>
+        // Delete message function
+        function deleteMessage(button) {
+            const message = button.closest('.message');
+            message.style.opacity = '0';
+            message.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                message.remove();
+            }, 300);
+        }
+
+        // Send message function
+        function sendMessage() {
+            const input = document.querySelector('.message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const activeSender = document.querySelector('.sender-option.active').dataset.sender;
+            const isUser = activeSender === 'user';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            messageDiv.style.opacity = '0';
+            messageDiv.style.transform = 'translateY(20px)';
+            
+            if (isUser) {
+                messageDiv.innerHTML = `
+                    <div class="avatar-container">
+                        <div class="avatar user-avatar">👤</div>
+                        <div class="avatar-name">Kast in wording</div>
+                    </div>
+                    <div class="message-content">
+                        <div class="sender-name">Kast in wording</div>
+                        <div class="text-bubble user-bubble" contenteditable="true">
+                            ${text}
+                        </div>
+                        <div class="edit-hint">Klik om te bewerken</div>
+                    </div>
+                    <button class="delete-button" onclick="deleteMessage(this)">×</button>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="avatar-container">
+                        <img src="data:image/png;base64,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" class="avatar bot-avatar" alt="Kastbot">
+                        <div class="avatar-name">Kastbot</div>
+                    </div>
+                    <div class="message-content">
+                        <div class="sender-name">Kastbot</div>
+                        <div class="text-bubble bot-bubble" contenteditable="true">
+                            ${text}
+                        </div>
+                        <div class="edit-hint">Klik om te bewerken</div>
+                    </div>
+                    <button class="delete-button" onclick="deleteMessage(this)">×</button>
+                `;
+            }
+
+            const productSection = document.getElementById('product-section');
+            productSection.before(messageDiv);
+
+            setTimeout(() => {
+                messageDiv.style.transition = 'all 0.3s';
+                messageDiv.style.opacity = '1';
+                messageDiv.style.transform = 'translateY(0)';
+            }, 10);
+
+            input.value = '';
+            input.style.height = 'auto';
+        }
+
+        // Enter key to send
+        document.querySelector('.message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Sender toggle
+        document.querySelectorAll('.sender-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.sender-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Auto-update total when prices change
+        const priceElements = document.querySelectorAll('.product-price span');
+        const totalElement = document.querySelector('.total span');
+
+        priceElements.forEach(el => {
+            el.addEventListener('input', updateTotal);
+        });
+
+        function updateTotal() {
+            let total = 0;
+            priceElements.forEach(el => {
+                const value = parseFloat(el.textContent.replace(',', '.')) || 0;
+                total += value;
+            });
+            totalElement.textContent = total.toFixed(2).replace('.', ',');
+        }
+
+        // Prevent line breaks in contenteditable elements
+        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            if (!el.classList.contains('text-bubble')) {
+                el.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+
+        // Image upload handlers
+        document.getElementById('tsunami-upload').addEventListener('change', function(e) {
+            handleImageUpload(e, 0);
+        });
+
+        document.getElementById('eiwitten-upload').addEventListener('change', function(e) {
+            handleImageUpload(e, 1);
+        });
+
+        document.getElementById('slapend-upload').addEventListener('change', function(e) {
+            handleImageUpload(e, 2);
+        });
+
+        function handleImageUpload(e, cardIndex) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const containers = document.querySelectorAll('.product-image-container');
+                    const container = containers[cardIndex];
+                    container.innerHTML = `
+                        <img src="${event.target.result}" class="product-image" alt="Product">
+                        <div class="upload-overlay">📸 Klik om afbeelding te wijzigen</div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Auto-resize textarea
+        const textarea = document.querySelector('.message-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+    </script>
+</body>
+</html>
